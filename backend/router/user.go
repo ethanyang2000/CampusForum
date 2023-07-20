@@ -12,7 +12,14 @@ func Register(engine *gin.Engine) {
 			"message": "pong",
 		})
 	})
+
+	userGroup := engine.Group("user")
 	rootGroup := engine.Group("api")
+
 	rootGroup.POST("/login", controller.LogIn)
 	rootGroup.POST("/register", controller.Register)
+
+	userGroup.Use(Auth())
+	userGroup.POST("/changepswd", controller.ChangePswd)
+	userGroup.POST("/changename", controller.ChangeName)
 }

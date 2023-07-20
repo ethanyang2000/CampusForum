@@ -41,3 +41,41 @@ func LogIn(c *gin.Context) {
 	}
 
 }
+
+func ChangePswd(c *gin.Context) {
+	if user, err := model.GetUserByCookie(c); err != nil {
+		c.JSON(500, err)
+	} else {
+		obj := struct {
+			NewPswd string `json:"newpswd"`
+		}{}
+		if err := c.BindJSON(&obj); err != nil {
+			c.JSON(500, err)
+		} else {
+			if err := user.ChangePswd(obj.NewPswd); err != nil {
+				c.JSON(500, err)
+			} else {
+				c.JSON(200, "password changed!")
+			}
+		}
+	}
+}
+
+func ChangeName(c *gin.Context) {
+	if user, err := model.GetUserByCookie(c); err != nil {
+		c.JSON(500, err)
+	} else {
+		obj := struct {
+			NewName string `json:"newname"`
+		}{}
+		if err := c.BindJSON(&obj); err != nil {
+			c.JSON(500, err)
+		} else {
+			if err := user.ChangeName(obj.NewName); err != nil {
+				c.JSON(500, err)
+			} else {
+				c.JSON(200, "user name changed!")
+			}
+		}
+	}
+}

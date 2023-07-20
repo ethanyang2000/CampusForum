@@ -10,6 +10,11 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/readpref"
 )
 
+type db struct {
+	users *mongo.Collection
+	posts *mongo.Collection
+}
+
 func NewDB() *db {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
@@ -27,17 +32,14 @@ func NewDB() *db {
 		panic(err)
 	}
 	return &db{
-		data: conn.Database("campus_forum").Collection("users"),
+		users: conn.Database("campus_forum").Collection("users"),
+		posts: conn.Database("campus_forum").Collection("posts"),
 	}
 }
 
-type db struct {
-	data *mongo.Collection
-}
-
-func (d *db) Exist(email string) bool {
+func (d *db) UserExist(email string) bool {
 	user := new(User)
-	err := d.data.FindOne(context.Background(), bson.M{"email": email}).Decode(user)
+	err := d.users.FindOne(context.Background(), bson.M{"email": email}).Decode(user)
 	if err != nil {
 		return false
 	} else {
@@ -45,13 +47,8 @@ func (d *db) Exist(email string) bool {
 	}
 }
 
-func (d *db) Store(u *User) error {
-	b := bson.M{
-		"email": u.email,
-		"name":  u.name,
-		"pswd":  u.pswd,
-	}
-	_, err := d.data.InsertOne(context.Background(), b)
+func (d *db) UserStore(u *User) error {
+	_, err := d.users.InsertOne(context.Background(), u)
 	if err != nil {
 		return err
 	} else {
@@ -59,19 +56,23 @@ func (d *db) Store(u *User) error {
 	}
 }
 
-func (d *db) GetPswd(email string) string {
-	type u struct {
-		Email string `bson:"email"`
-		Name  string `bson:"name"`
-		Pswd  string `bson:"pswd"`
-	}
-	var user u
-
-	err := d.data.FindOne(context.Background(), bson.D{{"email", email}}).Decode(&user)
+func (d *db) GetPswd(email string) (string, error) {
+	user := new(User)
+	err := d.users.FindOne(context.Background(), bson.D{{"email", email}}).Decode(user)
 
 	if err != nil {
-		return ""
+		return "", err
 	} else {
-		return user.Pswd
+		return user.Pswd, nil
+	}
+}
+
+func (d *db) Fetch(email string) (*User, error) {
+	user := new(User)
+	err := d.users.FindOne(context.Background(), bson.D{{"email", email}}).Decode(user)
+	if err != nil {
+		return nil, err
+	} else {
+		return user, nil
 	}
 }
